@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   StyleSheet,
   View,
@@ -22,8 +22,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import RNFS from "react-native-fs"; // File system module
 import { initLlama, releaseAllLlama } from "llama.rn";
+import { AuthContext } from "../context/AuthContext";
 
-// Available models
 const AVAILABLE_MODELS = [
   {
     id: "qwen2.5-0.5b",
@@ -63,10 +63,29 @@ const AVAILABLE_MODELS = [
     systemPrompt:
       "You are TinyLlama, a helpful AI assistant. Provide concise and accurate responses.",
   },
+  // {
+  //   id: "codellama-7b-instruct",
+  //   name: "CodeLlama 7B Instruct",
+  //   shortName: "CodeLlama",
+  //   badgeColor: "#7e4aff",
+  //   description:
+  //     "A compact and efficient model designed for chat applications. Ideal for lightweight tasks and mobile use.",
+  //   size: "2.83 GB",
+  //   filename: "odellama-7b-instruct.Q2_K.gguf",
+  //   downloadUrl:
+  //     "https://huggingface.co/TheBloke/CodeLlama-7B-Instruct-GGUF/resolve/main/codellama-7b-instruct.Q2_K.gguf?download=true",
+  //   params: {
+  //     use_mlock: true,
+  //     n_ctx: 2048,
+  //     n_gpu_layers: 1,
+  //   },
+  //   systemPrompt:
+  //     "You are CodeLlama, a helpful AI assistant. Provide concise and accurate responses.",
+  // },
 ];
 
 const ChatScreen = () => {
-  // UI State
+  const { setIsLoggedIn } = useContext(AuthContext);
   const [showSidebar, setShowSidebar] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
@@ -75,12 +94,10 @@ const ChatScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
-  // Rename chat state
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [chatToRename, setChatToRename] = useState(null);
   const [newChatName, setNewChatName] = useState("");
 
-  // Model state
   const [progress, setProgress] = useState(0);
   const [context, setContext] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -93,7 +110,8 @@ const ChatScreen = () => {
   const sidebarAnimation = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
 
-  // Check which models exist on app start
+  const { width, height } = Dimensions.get("window");
+
   useEffect(() => {
     const checkModelsExist = async () => {
       const modelStatus = {};
@@ -132,7 +150,6 @@ const ChatScreen = () => {
     };
   }, []);
 
-  // Load messages when current chat changes
   useEffect(() => {
     if (currentChatId) {
       loadMessages(currentChatId);
@@ -141,7 +158,6 @@ const ChatScreen = () => {
     }
   }, [currentChatId]);
 
-  // Animation for sidebar
   useEffect(() => {
     Animated.timing(sidebarAnimation, {
       toValue: showSidebar ? 1 : 0,
@@ -150,12 +166,10 @@ const ChatScreen = () => {
     }).start();
   }, [showSidebar]);
 
-  // Get model path
   const getModelPath = (model) => {
     return `${RNFS.DocumentDirectoryPath}/${model.filename}`;
   };
 
-  // Download a model
   const handleDownloadModel = async (model) => {
     const modelPath = getModelPath(model);
     setIsDownloading(true);
@@ -202,7 +216,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Load a model
   const loadModel = async (model) => {
     if (context) {
       // Unload current model before loading a new one
@@ -242,7 +255,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Delete a model
   const deleteModel = async (model) => {
     const modelPath = getModelPath(model);
 
@@ -271,7 +283,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Load chat history from AsyncStorage
   const loadChatHistory = async () => {
     try {
       const storedHistory = await AsyncStorage.getItem("chatHistory");
@@ -289,7 +300,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Load messages for specific chat
   const loadMessages = async (chatId) => {
     try {
       const storedMessages = await AsyncStorage.getItem(`chat_${chatId}`);
@@ -303,7 +313,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Save chat history to AsyncStorage
   const saveChatHistory = async (history) => {
     try {
       await AsyncStorage.setItem("chatHistory", JSON.stringify(history));
@@ -312,7 +321,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Save messages for specific chat
   const saveMessages = async (chatId, messageList) => {
     try {
       await AsyncStorage.setItem(`chat_${chatId}`, JSON.stringify(messageList));
@@ -321,11 +329,9 @@ const ChatScreen = () => {
     }
   };
 
-  // Create a new chat
   const createNewChat = () => {
     const newChatId = Date.now().toString();
 
-    // Include the currently active model in the chat metadata
     const newChat = {
       id: newChatId,
       title: "New Chat",
@@ -342,14 +348,12 @@ const ChatScreen = () => {
     setShowSidebar(false);
   };
 
-  // Open rename modal
   const openRenameModal = (chat) => {
     setChatToRename(chat);
     setNewChatName(chat.title);
     setRenameModalVisible(true);
   };
 
-  // Handle rename chat
   const handleRenameChat = () => {
     if (!chatToRename || !newChatName.trim()) {
       setRenameModalVisible(false);
@@ -369,7 +373,6 @@ const ChatScreen = () => {
     setNewChatName("");
   };
 
-  // Send message to AI
   const sendMessage = async () => {
     if (!inputText.trim() || !currentChatId) return;
 
@@ -471,7 +474,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Delete a chat
   const deleteChat = async (chatId) => {
     const updatedHistory = chatHistory.filter((chat) => chat.id !== chatId);
     setChatHistory(updatedHistory);
@@ -494,54 +496,71 @@ const ChatScreen = () => {
     }
   };
 
-  // Sidebar width animation
   const sidebarWidth = sidebarAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 280],
   });
 
-  // Get the model badge color
-  const getModelBadgeColor = (modelId) => {
-    switch (modelId) {
-      case "qwen2.5-0.5b":
-        return "#4a9eff";
-      case "mistral-7b-instruct":
-        return "#7e4aff";
-      case "llama3-8b-instruct":
-        return "#ff4a79";
-      default:
-        return "#999";
-    }
-  };
-
-  // Get short name for model badge
-  const getModelShortName = (modelId) => {
-    switch (modelId) {
-      case "qwen2.5-0.5b":
-        return "Qwen";
-      case "mistral-7b-instruct":
-        return "Mistral";
-      case "llama3-8b-instruct":
-        return "Llama 3";
-      default:
-        return "AI";
-    }
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.removeItem("access_token");
+            console.log("Logging out...");
+            setIsLoggedIn(false);
+          } catch (error) {
+            console.error("Error during logout:", error);
+            Alert.alert("Error", "Failed to logout. Please try again.");
+          }
+        },
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Main Content */}
-      <View style={styles.mainContent}>
-        {/* Header */}
-        <View style={styles.header}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <View style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
+        <View
+          style={{
+            height: 60,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 15,
+            backgroundColor: "#ffffff",
+            borderBottomWidth: 1,
+            borderBottomColor: "#e0e0e0",
+          }}
+        >
           <TouchableOpacity
             onPress={() => setShowSidebar(!showSidebar)}
-            style={styles.menuButton}
+            style={{ padding: 8 }}
           >
-            <Ionicons name="menu" size={24} color="#fff" />
+            <Ionicons name="menu" size={24} color="#000000" />
           </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: "#333333",
+                fontSize: 18,
+                fontWeight: "600",
+                marginRight: 8,
+              }}
+            >
               {currentChatId
                 ? chatHistory.find((chat) => chat.id === currentChatId)
                     ?.title || "Chat"
@@ -549,34 +568,44 @@ const ChatScreen = () => {
             </Text>
             {currentModel && (
               <View
-                style={[
-                  styles.modelBadge,
-                  { backgroundColor: currentModel.badgeColor },
-                ]}
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 12,
+                  backgroundColor: currentModel.badgeColor,
+                }}
               >
-                <Text style={styles.modelBadgeText}>
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                  }}
+                >
                   {currentModel.shortName}
                 </Text>
               </View>
             )}
           </View>
-          <View style={styles.headerRightButtons}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
             <TouchableOpacity
               onPress={() => setShowModelSettings(true)}
-              style={styles.modelButton}
+              style={{ padding: 8, marginRight: 4 }}
             >
               <Ionicons
                 name={context ? "cube" : "cube-outline"}
                 size={24}
-                color={context ? "#5ee432" : "#fff"}
+                color={context ? "#5ee432" : "#000000"}
               />
             </TouchableOpacity>
             {!inputFocused && (
-              <TouchableOpacity
-                onPress={createNewChat}
-                style={styles.newChatButton}
-              >
-                <Ionicons name="add-circle-outline" size={24} color="#fff" />
+              <TouchableOpacity onPress={createNewChat} style={{ padding: 8 }}>
+                <Ionicons name="add-circle-outline" size={24} color="#000000" />
               </TouchableOpacity>
             )}
           </View>
@@ -585,7 +614,7 @@ const ChatScreen = () => {
         {/* Chat Area */}
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.chatContainer}
+          style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
           {currentChatId ? (
@@ -594,40 +623,68 @@ const ChatScreen = () => {
                 ref={flatListRef}
                 data={messages}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.messagesContainer}
+                contentContainerStyle={{
+                  flexGrow: 1,
+                  padding: 16,
+                  paddingBottom: 24,
+                }}
                 renderItem={({ item }) => (
                   <View
-                    style={[
-                      styles.messageBubble,
-                      item.sender === "user"
-                        ? styles.userBubble
-                        : styles.aiBubble,
-                    ]}
+                    style={{
+                      maxWidth: "80%",
+                      padding: 12,
+                      borderRadius: 16,
+                      marginBottom: 12,
+                      position: "relative",
+                      backgroundColor:
+                        item.sender === "user" ? "#0b93f6" : "#f0f0f0",
+                      alignSelf:
+                        item.sender === "user" ? "flex-end" : "flex-start",
+                      borderTopRightRadius: item.sender === "user" ? 2 : 16,
+                      borderTopLeftRadius: item.sender === "user" ? 16 : 2,
+                    }}
                   >
                     {item.sender === "ai" && item.modelId && (
-                      <View style={styles.messageModelIndicator}>
-                        <Text style={styles.messageModelName}>
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: -8,
+                          left: 10,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          backgroundColor: "#e0e0e0",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#333333",
+                            fontSize: 10,
+                            fontWeight: "bold",
+                          }}
+                        >
                           {item.shortName || "AI"}
                         </Text>
                       </View>
                     )}
                     <Text
-                      style={[
-                        styles.messageText,
-                        item.sender === "user"
-                          ? styles.userMessageText
-                          : styles.aiMessageText,
-                      ]}
+                      style={{
+                        fontSize: 16,
+                        color: item.sender === "user" ? "#ffffff" : "#333333",
+                      }}
                     >
                       {item.text}
                     </Text>
                     <Text
-                      style={[
-                        styles.timestamp,
-                        item.sender === "user"
-                          ? styles.userTimestamp
-                          : styles.aiTimestamp,
-                      ]}
+                      style={{
+                        fontSize: 11,
+                        alignSelf: "flex-end",
+                        marginTop: 4,
+                        color:
+                          item.sender === "user"
+                            ? "rgba(255, 255, 255, 0.7)"
+                            : "rgba(0, 0, 0, 0.5)",
+                      }}
                     >
                       {new Date(item.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",
@@ -641,14 +698,43 @@ const ChatScreen = () => {
                 }
               />
 
-              {/* Input Area */}
-              <View style={styles.inputContainer}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 12,
+                  paddingBottom: 16,
+                  backgroundColor: "#f8f8f8",
+                  borderTopWidth: 0.5,
+                  borderTopColor: "rgba(0,0,0,0.1)",
+                }}
+              >
                 <TextInput
-                  style={styles.input}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#ffffff",
+                    fontSize: 16,
+                    borderRadius: 24,
+                    color: "#333333",
+                    maxHeight: 120,
+                    marginRight: 12,
+                    borderWidth: 1,
+                    borderColor: "rgba(0,0,0,0.1)",
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    shadowColor: "#000",
+                    shadowOffset: {
+                      width: 0,
+                      height: 1,
+                    },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
                   value={inputText}
                   onChangeText={setInputText}
-                  placeholder="Type a message..."
-                  placeholderTextColor="#666"
+                  placeholder="Type your message..."
+                  placeholderTextColor="#999"
                   multiline
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
@@ -656,47 +742,110 @@ const ChatScreen = () => {
                 />
                 <TouchableOpacity
                   onPress={sendMessage}
-                  style={[
-                    styles.sendButton,
-                    (!inputText.trim() || isGenerating || !context) &&
-                      styles.disabledSendButton,
-                  ]}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor:
+                      !inputText.trim() || isGenerating || !context
+                        ? "#e0e0e0"
+                        : "#007AFF",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    shadowColor:
+                      !inputText.trim() || isGenerating || !context
+                        ? "transparent"
+                        : "#007AFF",
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3,
+                    elevation: 3,
+                  }}
                   disabled={!inputText.trim() || isGenerating || !context}
                 >
                   {isLoading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Ionicons name="send" size={20} color="#fff" />
+                    <Ionicons
+                      name="send"
+                      size={20}
+                      color={
+                        !inputText.trim() || isGenerating || !context
+                          ? "#aaa"
+                          : "#fff"
+                      }
+                    />
                   )}
                 </TouchableOpacity>
               </View>
             </>
           ) : (
-            <View style={styles.emptyStateContainer}>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 20,
+              }}
+            >
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={64}
                 color="#555"
               />
-              <Text style={styles.emptyStateText}>
+              <Text
+                style={{
+                  color: "#888888",
+                  fontSize: 18,
+                  marginTop: 16,
+                  marginBottom: 24,
+                }}
+              >
                 Start a new conversation
               </Text>
               <TouchableOpacity
-                style={styles.emptyStateButton}
+                style={{
+                  backgroundColor: "#0b93f6",
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 8,
+                }}
                 onPress={createNewChat}
               >
-                <Text style={styles.emptyStateButtonText}>New Chat</Text>
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 16,
+                    fontWeight: "500",
+                  }}
+                >
+                  New Chat
+                </Text>
               </TouchableOpacity>
 
               {!context && (
                 <TouchableOpacity
-                  style={[
-                    styles.emptyStateButton,
-                    { marginTop: 12, backgroundColor: "#555" },
-                  ]}
+                  style={{
+                    backgroundColor: "#555",
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    borderRadius: 8,
+                    marginTop: 12,
+                  }}
                   onPress={() => setShowModelSettings(true)}
                 >
-                  <Text style={styles.emptyStateButtonText}>Load AI Model</Text>
+                  <Text
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Load AI Model
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -704,70 +853,160 @@ const ChatScreen = () => {
         </KeyboardAvoidingView>
       </View>
 
-      {/* Sidebar / Chat History */}
-      <Animated.View style={[styles.sidebar, { width: sidebarWidth }]}>
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          height: "100%",
+          backgroundColor: "#ffffff",
+          borderRightWidth: 1,
+          borderRightColor: "#e0e0e0",
+          zIndex: 10,
+          width: sidebarWidth,
+        }}
+      >
         {showSidebar && (
-          <View style={styles.sidebarHeader}>
-            <Text style={styles.sidebarTitle}>Chat History</Text>
+          <View
+            style={{
+              padding: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: "#e0e0e0",
+            }}
+          >
+            <Text
+              style={{
+                color: "#333333",
+                fontSize: 20,
+                fontWeight: "bold",
+                marginBottom: 16,
+              }}
+            >
+              Chat History
+            </Text>
             <TouchableOpacity
               onPress={createNewChat}
-              style={styles.newChatSidebarButton}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#0b93f6",
+                padding: 12,
+                borderRadius: 8,
+              }}
             >
               <Ionicons name="add" size={24} color="#fff" />
-              <Text style={styles.newChatText}>New Chat</Text>
+              <Text
+                style={{
+                  color: "#ffffff",
+                  fontSize: 16,
+                  marginLeft: 8,
+                  fontWeight: "500",
+                }}
+              >
+                New Chat
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Chat History List */}
         <FlatList
           data={chatHistory}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[
-                styles.chatItem,
-                currentChatId === item.id && styles.selectedChatItem,
-              ]}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "#e0e0e0",
+                backgroundColor:
+                  currentChatId === item.id ? "#e6f3ff" : "transparent",
+              }}
               onPress={() => {
                 setCurrentChatId(item.id);
                 setShowSidebar(false);
               }}
             >
-              <View style={styles.chatItemContent}>
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
                 <Ionicons name="chatbubble-outline" size={20} color="#ccc" />
-                <View style={styles.chatItemDetails}>
-                  <View style={styles.chatItemHeader}>
-                    <Text style={styles.chatItemTitle} numberOfLines={1}>
+                <View
+                  style={{
+                    flex: 1,
+                    marginLeft: 10,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#333333",
+                        fontSize: 16,
+                        marginRight: 6,
+                        flex: 1,
+                      }}
+                      numberOfLines={1}
+                    >
                       {item.title}
                     </Text>
                     {item.modelId && (
                       <View
-                        style={[
-                          styles.chatItemModelBadge,
-                          { backgroundColor: item.badgeColor },
-                        ]}
+                        style={{
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 8,
+                          backgroundColor: item.badgeColor,
+                        }}
                       >
-                        <Text style={styles.chatItemModelText}>
+                        <Text
+                          style={{
+                            color: "#ffffff",
+                            fontSize: 10,
+                            fontWeight: "bold",
+                          }}
+                        >
                           {item.shortName}
                         </Text>
                       </View>
                     )}
                   </View>
-                  <Text style={styles.chatItemPreview} numberOfLines={1}>
+                  <Text
+                    style={{
+                      color: "#666666",
+                      fontSize: 13,
+                    }}
+                    numberOfLines={1}
+                  >
                     {item.lastMessage || "New conversation"}
                   </Text>
                 </View>
               </View>
-              <View style={styles.chatItemActions}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
                 <TouchableOpacity
-                  style={styles.chatActionButton}
+                  style={{ padding: 6, marginLeft: 4 }}
                   onPress={() => openRenameModal(item)}
                 >
                   <Ionicons name="pencil-outline" size={18} color="#888" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.chatActionButton}
+                  style={{ padding: 6, marginLeft: 4 }}
                   onPress={() => deleteChat(item.id)}
                 >
                   <Ionicons name="trash-outline" size={18} color="#888" />
@@ -776,40 +1015,96 @@ const ChatScreen = () => {
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            <View style={styles.emptyHistoryContainer}>
-              <Text style={styles.emptyHistoryText}>No chats yet</Text>
+            <View
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 20,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#888888",
+                  fontSize: 16,
+                }}
+              >
+                No chats yet
+              </Text>
             </View>
           }
         />
 
         {/* Sidebar Footer */}
-        <View style={styles.sidebarFooter}>
+        <View
+          style={{
+            padding: 16,
+            borderTopWidth: 1,
+            borderTopColor: "#e0e0e0",
+            gap: 12,
+          }}
+        >
           <TouchableOpacity
-            style={styles.settingsButton}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+            }}
             onPress={() => setShowModelSettings(true)}
           >
             <Ionicons
               name={context ? "cube" : "cube-outline"}
               size={20}
-              color={context ? "#5ee432" : "#ccc"}
+              color={context ? "#5ee432" : "#666666"}
             />
-            <Text style={styles.settingsText}>
+            <Text
+              style={{
+                color: "#666666",
+                fontSize: 16,
+                marginLeft: 8,
+              }}
+            >
               {context ? `${currentModel.name}` : "Load Model"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginTop: 12,
+              padding: 8,
+            }}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={20} color="#d9534f" />
+            <Text
+              style={{
+                color: "#d9534f",
+                fontSize: 16,
+                marginLeft: 8,
+              }}
+            >
+              Logout
             </Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      {/* Overlay to close sidebar on tap */}
       {showSidebar && (
         <TouchableOpacity
-          style={styles.overlay}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 280, // Width of the sidebar
+            backgroundColor: "rgba(0, 0, 0, 0.2)",
+            zIndex: 5,
+          }}
           activeOpacity={1}
           onPress={() => setShowSidebar(false)}
         />
       )}
 
-      {/* Rename Chat Modal */}
       <Modal
         visible={renameModalVisible}
         transparent={true}
@@ -817,30 +1112,103 @@ const ChatScreen = () => {
         onRequestClose={() => setRenameModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setRenameModalVisible(false)}>
-          <View style={styles.modalOverlay}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Rename Chat</Text>
+              <View
+                style={{
+                  width: width * 0.8,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 12,
+                  padding: 20,
+                  alignItems: "center",
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#333333",
+                    fontSize: 18,
+                    fontWeight: "600",
+                    marginBottom: 16,
+                  }}
+                >
+                  Rename Chat
+                </Text>
                 <TextInput
-                  style={styles.modalInput}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#f5f5f5",
+                    color: "#333333",
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 20,
+                    borderWidth: 1,
+                    borderColor: "#e0e0e0",
+                  }}
                   value={newChatName}
                   onChangeText={setNewChatName}
                   placeholder="Enter new name"
                   placeholderTextColor="#666"
                   autoFocus
                 />
-                <View style={styles.modalButtons}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    width: "100%",
+                  }}
+                >
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
+                    style={{
+                      paddingVertical: 12,
+                      paddingHorizontal: 20,
+                      borderRadius: 8,
+                      flex: 0.48,
+                      alignItems: "center",
+                      backgroundColor: "#f0f0f0",
+                      borderWidth: 1,
+                      borderColor: "#e0e0e0",
+                    }}
                     onPress={() => setRenameModalVisible(false)}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text
+                      style={{
+                        color: "#666666",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton]}
+                    style={{
+                      paddingVertical: 12,
+                      paddingHorizontal: 20,
+                      borderRadius: 8,
+                      flex: 0.48,
+                      alignItems: "center",
+                      backgroundColor: "#0b93f6",
+                    }}
                     onPress={handleRenameChat}
                   >
-                    <Text style={styles.saveButtonText}>Save</Text>
+                    <Text
+                      style={{
+                        color: "#ffffff",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Save
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -849,60 +1217,178 @@ const ChatScreen = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Model Settings Modal */}
       <Modal
         visible={showModelSettings}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowModelSettings(false)}
       >
-        <View style={styles.modelModalContainer}>
-          <View style={styles.modelModalContent}>
-            <View style={styles.modelModalHeader}>
-              <Text style={styles.modelModalTitle}>AI Models</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "#f8f8f8",
+            }}
+          >
+            <View
+              style={{
+                height: 60,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 15,
+                backgroundColor: "#ffffff",
+                borderBottomWidth: 1,
+                borderBottomColor: "#e0e0e0",
+              }}
+            >
+              <Text
+                style={{
+                  color: "#333333",
+                  fontSize: 18,
+                  fontWeight: "600",
+                }}
+              >
+                AI Models
+              </Text>
               <TouchableOpacity
                 onPress={() => setShowModelSettings(false)}
-                style={styles.closeButton}
+                style={{ padding: 8 }}
               >
-                <Ionicons name="close" size={24} color="#fff" />
+                <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modelDetailsContainer}>
+            <ScrollView
+              style={{
+                flex: 1,
+                padding: 16,
+              }}
+            >
               {AVAILABLE_MODELS.map((model) => (
-                <View key={model.id} style={styles.modelCard}>
-                  <View style={styles.modelCardHeader}>
+                <View
+                  key={model.id}
+                  style={{
+                    backgroundColor: "#ffffff",
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 16,
+                    shadowColor: "#000000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: 8,
+                    }}
+                  >
                     <View>
-                      <Text style={styles.modelName}>{model.name}</Text>
-                      <Text style={styles.modelSize}>Size: {model.size}</Text>
+                      <Text
+                        style={{
+                          color: "#333333",
+                          fontSize: 18,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {model.name}
+                      </Text>
+                      <Text
+                        style={{
+                          color: "#666666",
+                          fontSize: 14,
+                          marginTop: 2,
+                        }}
+                      >
+                        Size: {model.size}
+                      </Text>
                     </View>
                     {modelExists[model.id] &&
                       currentModel &&
                       currentModel.id === model.id && (
-                        <View style={styles.activeModelBadge}>
-                          <Text style={styles.activeModelText}>Active</Text>
+                        <View
+                          style={{
+                            backgroundColor: "#5ee432",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "#000000",
+                              fontSize: 12,
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Active
+                          </Text>
                         </View>
                       )}
                   </View>
 
-                  <Text style={styles.modelDescription}>
+                  <Text
+                    style={{
+                      color: "#555555",
+                      fontSize: 14,
+                      marginBottom: 16,
+                      lineHeight: 20,
+                    }}
+                  >
                     {model.description}
                   </Text>
 
-                  <View style={styles.statusContainer}>
-                    <Text style={styles.statusLabel}>Status:</Text>
-                    <View style={styles.statusIndicator}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#333333",
+                        fontSize: 16,
+                        marginRight: 8,
+                      }}
+                    >
+                      Status:
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
                       <View
-                        style={[
-                          styles.statusDot,
-                          modelExists[model.id]
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: 5,
+                          marginRight: 8,
+                          backgroundColor: modelExists[model.id]
                             ? currentModel && currentModel.id === model.id
-                              ? styles.statusActive
-                              : styles.statusDownloaded
-                            : styles.statusInactive,
-                        ]}
+                              ? "#5ee432"
+                              : "#ffcc00"
+                            : "#ff3b30",
+                        }}
                       />
-                      <Text style={styles.statusText}>
+                      <Text
+                        style={{
+                          color: "#333333",
+                          fontSize: 14,
+                        }}
+                      >
                         {modelExists[model.id]
                           ? currentModel && currentModel.id === model.id
                             ? "Loaded and Active"
@@ -913,36 +1399,82 @@ const ChatScreen = () => {
                   </View>
 
                   {activeDownloadId === model.id && isDownloading && (
-                    <View style={styles.downloadProgress}>
+                    <View
+                      style={{
+                        backgroundColor: "#f0f0f0",
+                        height: 40,
+                        borderRadius: 8,
+                        marginBottom: 16,
+                        overflow: "hidden",
+                        position: "relative",
+                        borderWidth: 1,
+                        borderColor: "#e0e0e0",
+                      }}
+                    >
                       <View
-                        style={[styles.progressBar, { width: `${progress}%` }]}
+                        style={{
+                          backgroundColor: "#0b93f6",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          bottom: 0,
+                          width: `${progress}%`,
+                        }}
                       />
-                      <Text style={styles.progressText}>
+                      <Text
+                        style={{
+                          color: "#333333",
+                          position: "absolute",
+                          alignSelf: "center",
+                          top: 10,
+                          fontWeight: "bold",
+                        }}
+                      >
                         {progress.toFixed(1)}%
                       </Text>
                       <ActivityIndicator
                         size="small"
                         color="#0b93f6"
-                        style={styles.loadingIndicator}
+                        style={{
+                          position: "absolute",
+                          right: 10,
+                          top: 10,
+                        }}
                       />
                     </View>
                   )}
 
-                  <View style={styles.modelActionButtonsRow}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     {!modelExists[model.id] && (
                       <TouchableOpacity
-                        style={[
-                          styles.modelActionButton,
-                          activeDownloadId === model.id && isDownloading
-                            ? styles.disabledModelButton
-                            : null,
-                        ]}
+                        style={{
+                          flex: 1,
+                          backgroundColor:
+                            activeDownloadId === model.id && isDownloading
+                              ? "#cccccc"
+                              : "#0b93f6",
+                          padding: 12,
+                          borderRadius: 8,
+                          alignItems: "center",
+                          marginHorizontal: 4,
+                        }}
                         onPress={() => handleDownloadModel(model)}
                         disabled={
                           activeDownloadId === model.id && isDownloading
                         }
                       >
-                        <Text style={styles.modelActionButtonText}>
+                        <Text
+                          style={{
+                            color: "#ffffff",
+                            fontSize: 16,
+                            fontWeight: "600",
+                          }}
+                        >
                           {activeDownloadId === model.id && isDownloading
                             ? "Downloading..."
                             : "Download"}
@@ -953,11 +1485,24 @@ const ChatScreen = () => {
                     {modelExists[model.id] &&
                       !(currentModel && currentModel.id === model.id) && (
                         <TouchableOpacity
-                          style={styles.modelActionButton}
+                          style={{
+                            flex: 1,
+                            backgroundColor: "#0b93f6",
+                            padding: 12,
+                            borderRadius: 8,
+                            alignItems: "center",
+                            marginHorizontal: 4,
+                          }}
                           onPress={() => loadModel(model)}
                           disabled={isLoading}
                         >
-                          <Text style={styles.modelActionButtonText}>
+                          <Text
+                            style={{
+                              color: "#ffffff",
+                              fontSize: 16,
+                              fontWeight: "600",
+                            }}
+                          >
                             {isLoading ? "Loading..." : "Load Model"}
                           </Text>
                         </TouchableOpacity>
@@ -967,10 +1512,14 @@ const ChatScreen = () => {
                       currentModel &&
                       currentModel.id === model.id && (
                         <TouchableOpacity
-                          style={[
-                            styles.modelActionButton,
-                            { backgroundColor: "#555" },
-                          ]}
+                          style={{
+                            flex: 1,
+                            backgroundColor: "#555",
+                            padding: 12,
+                            borderRadius: 8,
+                            alignItems: "center",
+                            marginHorizontal: 4,
+                          }}
                           onPress={() => {
                             releaseAllLlama();
                             setContext(null);
@@ -981,7 +1530,13 @@ const ChatScreen = () => {
                             );
                           }}
                         >
-                          <Text style={styles.modelActionButtonText}>
+                          <Text
+                            style={{
+                              color: "#ffffff",
+                              fontSize: 16,
+                              fontWeight: "600",
+                            }}
+                          >
                             Unload
                           </Text>
                         </TouchableOpacity>
@@ -989,10 +1544,14 @@ const ChatScreen = () => {
 
                     {modelExists[model.id] && (
                       <TouchableOpacity
-                        style={[
-                          styles.modelActionButton,
-                          styles.deleteModelButton,
-                        ]}
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#d9534f",
+                          padding: 12,
+                          borderRadius: 8,
+                          alignItems: "center",
+                          marginHorizontal: 4,
+                        }}
                         onPress={() => {
                           Alert.alert(
                             "Delete Model",
@@ -1014,16 +1573,51 @@ const ChatScreen = () => {
                           activeDownloadId === model.id && isDownloading
                         }
                       >
-                        <Text style={styles.modelActionButtonText}>Delete</Text>
+                        <Text
+                          style={{
+                            color: "#ffffff",
+                            fontSize: 16,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Delete
+                        </Text>
                       </TouchableOpacity>
                     )}
                   </View>
                 </View>
               ))}
 
-              <View style={styles.modelInfoSection}>
-                <Text style={styles.infoTitle}>About Models</Text>
-                <Text style={styles.infoText}>
+              <View
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 16,
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#333333",
+                    fontSize: 18,
+                    fontWeight: "600",
+                    marginBottom: 12,
+                  }}
+                >
+                  About Models
+                </Text>
+                <Text
+                  style={{
+                    color: "#555555",
+                    fontSize: 14,
+                    lineHeight: 22,
+                  }}
+                >
                   • All processing happens on your device{"\n"}• No internet
                   connection needed once downloaded{"\n"}• Larger models
                   generally give better responses but use more memory{"\n"}• You
@@ -1039,515 +1633,3 @@ const ChatScreen = () => {
 };
 
 export default ChatScreen;
-
-const { width, height } = Dimensions.get("window");
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1a1a1a",
-  },
-  mainContent: {
-    flex: 1,
-    backgroundColor: "#222",
-  },
-  header: {
-    height: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    backgroundColor: "#333",
-    borderBottomWidth: 1,
-    borderBottomColor: "#444",
-  },
-  headerTitleContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginRight: 8,
-  },
-  modelBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  modelBadgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  headerRightButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  newChatButton: {
-    padding: 8,
-  },
-  modelButton: {
-    padding: 8,
-    marginRight: 4,
-  },
-  chatContainer: {
-    flex: 1,
-  },
-  messagesContainer: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 24,
-  },
-  messageBubble: {
-    maxWidth: "80%",
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 12,
-    position: "relative",
-  },
-  userBubble: {
-    backgroundColor: "#0b93f6",
-    alignSelf: "flex-end",
-    borderTopRightRadius: 2,
-  },
-  aiBubble: {
-    backgroundColor: "#333",
-    alignSelf: "flex-start",
-    borderTopLeftRadius: 2,
-  },
-  messageModelIndicator: {
-    position: "absolute",
-    top: -8,
-    left: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: "#444",
-    borderRadius: 8,
-  },
-  messageModelName: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  userMessageText: {
-    color: "#fff",
-  },
-  aiMessageText: {
-    color: "#fff",
-  },
-  timestamp: {
-    fontSize: 11,
-    alignSelf: "flex-end",
-    marginTop: 4,
-  },
-  userTimestamp: {
-    color: "rgba(255, 255, 255, 0.6)",
-  },
-  aiTimestamp: {
-    color: "rgba(255, 255, 255, 0.6)",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#444",
-    backgroundColor: "#2a2a2a",
-  },
-  input: {
-    flex: 1,
-    backgroundColor: "#333",
-    padding: 12,
-    borderRadius: 20,
-    color: "#fff",
-    maxHeight: 120,
-    marginRight: 10,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#0b93f6",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  disabledSendButton: {
-    backgroundColor: "#555",
-  },
-  sidebar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    height: "100%",
-    backgroundColor: "#222",
-    borderRightWidth: 1,
-    borderRightColor: "#444",
-    zIndex: 10,
-  },
-  sidebarHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#444",
-  },
-  sidebarTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  newChatSidebarButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0b93f6",
-    padding: 12,
-    borderRadius: 8,
-  },
-  newChatText: {
-    color: "#fff",
-    fontSize: 16,
-    marginLeft: 8,
-    fontWeight: "500",
-  },
-  chatItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  selectedChatItem: {
-    backgroundColor: "#333",
-  },
-  chatItemContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  chatItemDetails: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  chatItemHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  chatItemTitle: {
-    color: "#fff",
-    fontSize: 16,
-    marginRight: 6,
-    flex: 1,
-  },
-  chatItemModelBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  chatItemModelText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  chatItemPreview: {
-    color: "#999",
-    fontSize: 13,
-  },
-  chatItemActions: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  chatActionButton: {
-    padding: 6,
-    marginLeft: 4,
-  },
-  emptyHistoryContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  emptyHistoryText: {
-    color: "#888",
-    fontSize: 16,
-  },
-  sidebarFooter: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#444",
-  },
-  settingsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  settingsText: {
-    color: "#ccc",
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 280, // Width of the sidebar
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    zIndex: 5,
-  },
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyStateText: {
-    color: "#888",
-    fontSize: 18,
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  emptyStateButton: {
-    backgroundColor: "#0b93f6",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  emptyStateButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: width * 0.8,
-    backgroundColor: "#2a2a2a",
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-  },
-  modalTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 16,
-  },
-  modalInput: {
-    width: "100%",
-    backgroundColor: "#333",
-    color: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  modalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 0.48,
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#444",
-  },
-  cancelButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  saveButton: {
-    backgroundColor: "#0b93f6",
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  // Model modal styles
-  modelModalContainer: {
-    flex: 1,
-    backgroundColor: "#1a1a1a",
-  },
-  modelModalContent: {
-    flex: 1,
-    backgroundColor: "#222",
-  },
-  modelModalHeader: {
-    height: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    backgroundColor: "#333",
-    borderBottomWidth: 1,
-    borderBottomColor: "#444",
-  },
-  modelModalTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  closeButton: {
-    padding: 8,
-  },
-  modelDetailsContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  modelCard: {
-    backgroundColor: "#333",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  modelCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  modelName: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  modelSize: {
-    color: "#aaa",
-    fontSize: 14,
-    marginTop: 2,
-  },
-  activeModelBadge: {
-    backgroundColor: "#5ee432",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  activeModelText: {
-    color: "#000",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  modelDescription: {
-    color: "#ccc",
-    fontSize: 14,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  statusLabel: {
-    color: "#fff",
-    fontSize: 16,
-    marginRight: 8,
-  },
-  statusIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
-  },
-  statusActive: {
-    backgroundColor: "#5ee432",
-  },
-  statusDownloaded: {
-    backgroundColor: "#ffcc00",
-  },
-  statusInactive: {
-    backgroundColor: "#ff3b30",
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: 14,
-  },
-  downloadProgress: {
-    backgroundColor: "#444",
-    height: 40,
-    borderRadius: 8,
-    marginBottom: 16,
-    overflow: "hidden",
-    position: "relative",
-  },
-  progressBar: {
-    backgroundColor: "#0b93f6",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-  },
-  progressText: {
-    color: "#fff",
-    position: "absolute",
-    alignSelf: "center",
-    top: 10,
-    fontWeight: "bold",
-  },
-  loadingIndicator: {
-    position: "absolute",
-    right: 10,
-    top: 10,
-  },
-  modelActionButtonsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  modelActionButton: {
-    flex: 1,
-    backgroundColor: "#0b93f6",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  deleteModelButton: {
-    backgroundColor: "#d9534f",
-  },
-  disabledModelButton: {
-    backgroundColor: "#555",
-  },
-  modelActionButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modelInfoSection: {
-    backgroundColor: "#333",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  infoTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  infoText: {
-    color: "#ccc",
-    fontSize: 14,
-    lineHeight: 22,
-  },
-});

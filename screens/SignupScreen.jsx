@@ -18,7 +18,6 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { registerService } from "../services/authServices";
 
@@ -34,30 +33,25 @@ const SignupScreen = () => {
 
   const navigation = useNavigation();
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
 
-    // Validate name
     if (!fullName.trim()) {
       newErrors.name = "Name is required";
     }
 
-    // Validate email
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = "Email is invalid";
     }
 
-    // Validate password
     if (!password) {
       newErrors.password = "Password is required";
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    // Validate confirm password
     if (!confirmPassword) {
       newErrors.confirmPassword = "Please confirm your password";
     } else if (confirmPassword !== password) {
@@ -68,7 +62,6 @@ const SignupScreen = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle signup
   const handleSignup = async () => {
     if (!validateForm()) return;
 
@@ -113,10 +106,10 @@ const SignupScreen = () => {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.logoContainer}>
-              <Image
+              {/* <Image
                 source={require("../assets/logo.png")}
                 style={{ width: 70, height: 70 }}
-              />
+              /> */}
             </View>
 
             <Text style={styles.welcomeText}>Create Account</Text>
@@ -136,13 +129,13 @@ const SignupScreen = () => {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color="#999"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="Your full Name"
-                    placeholderTextColor="#666"
+                    placeholderTextColor="#999"
                     value={fullName}
                     onChangeText={setFullName}
                     autoCapitalize="words"
@@ -164,13 +157,13 @@ const SignupScreen = () => {
                   <Ionicons
                     name="mail-outline"
                     size={20}
-                    color="#999"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="your.email@example.com"
-                    placeholderTextColor="#666"
+                    placeholderTextColor="#999"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -194,13 +187,13 @@ const SignupScreen = () => {
                   <Ionicons
                     name="lock-closed-outline"
                     size={20}
-                    color="#999"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="Create a password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor="#999"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -213,7 +206,7 @@ const SignupScreen = () => {
                     <Ionicons
                       name={showPassword ? "eye-off-outline" : "eye-outline"}
                       size={20}
-                      color="#999"
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
@@ -233,13 +226,13 @@ const SignupScreen = () => {
                   <Ionicons
                     name="lock-closed-outline"
                     size={20}
-                    color="#999"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="Confirm your password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor="#999"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
@@ -254,7 +247,7 @@ const SignupScreen = () => {
                         showConfirmPassword ? "eye-off-outline" : "eye-outline"
                       }
                       size={20}
-                      color="#999"
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
@@ -301,12 +294,10 @@ const SignupScreen = () => {
   );
 };
 
-const { width } = Dimensions.get("window");
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#ffffff",
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -321,20 +312,20 @@ const styles = StyleSheet.create({
     marginVertical: 30,
   },
   appName: {
-    color: "#fff",
+    color: "#333",
     fontSize: 28,
     fontWeight: "bold",
     marginTop: 8,
   },
   welcomeText: {
-    color: "#fff",
+    color: "#333",
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 10,
   },
   signupPrompt: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 30,
@@ -347,7 +338,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    color: "#fff",
+    color: "#333",
     fontSize: 16,
     marginBottom: 8,
     fontWeight: "500",
@@ -355,10 +346,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#333",
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: "#e0e0e0",
     height: 55,
   },
   inputError: {
@@ -369,7 +360,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: "#fff",
+    color: "#333",
     fontSize: 16,
     height: "100%",
   },
@@ -399,7 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(11, 147, 246, 0.1)",
   },
   termsText: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 14,
     flex: 1,
   },
@@ -427,10 +418,10 @@ const styles = StyleSheet.create({
   separatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#444",
+    backgroundColor: "#e0e0e0",
   },
   separatorText: {
-    color: "#888",
+    color: "#666",
     marginHorizontal: 10,
     fontSize: 14,
   },
@@ -443,19 +434,19 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#333",
+    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: "#e0e0e0",
   },
   loginContainer: {
     flexDirection: "row",
     justifyContent: "center",
   },
   loginText: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 16,
   },
   loginLink: {

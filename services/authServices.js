@@ -1,7 +1,6 @@
 import { API_BASE_URL } from "../constant/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 
 export const getTokenService = async () => {
   try {

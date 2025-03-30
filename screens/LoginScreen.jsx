@@ -17,7 +17,6 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { loginService } from "../services/authServices";
 import { AuthContext } from "../context/AuthContext";
@@ -32,18 +31,15 @@ const LoginScreen = ({ onLogin }) => {
   const navigation = useNavigation();
   const { setIsLoggedIn } = useContext(AuthContext);
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
 
-    // Validate email
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = "Email is invalid";
     }
 
-    // Validate password
     if (!password) {
       newErrors.password = "Password is required";
     } else if (password.length < 6) {
@@ -81,10 +77,10 @@ const LoginScreen = ({ onLogin }) => {
         >
           <View style={styles.contentContainer}>
             <View style={styles.logoContainer}>
-              <Image
+              {/* <Image
                 source={require("../assets/logo.png")}
                 style={{ width: 70, height: 70 }}
-              />
+              /> */}
             </View>
 
             <Text style={styles.welcomeText}>Welcome Back</Text>
@@ -104,13 +100,13 @@ const LoginScreen = ({ onLogin }) => {
                   <Ionicons
                     name="mail-outline"
                     size={20}
-                    color="#999"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="your.email@example.com"
-                    placeholderTextColor="#666"
+                    placeholderTextColor="#999"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -134,13 +130,13 @@ const LoginScreen = ({ onLogin }) => {
                   <Ionicons
                     name="lock-closed-outline"
                     size={20}
-                    color="#999"
+                    color="#666"
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="Your password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor="#999"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -154,7 +150,7 @@ const LoginScreen = ({ onLogin }) => {
                     <Ionicons
                       name={showPassword ? "eye-off-outline" : "eye-outline"}
                       size={20}
-                      color="#999"
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
@@ -162,11 +158,6 @@ const LoginScreen = ({ onLogin }) => {
                   <Text style={styles.errorText}>{errors.password}</Text>
                 )}
               </View>
-
-              <TouchableOpacity style={styles.forgotPasswordButton}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={handleLogin}
@@ -178,12 +169,6 @@ const LoginScreen = ({ onLogin }) => {
                   <Text style={styles.loginButtonText}>Login</Text>
                 )}
               </TouchableOpacity>
-            </View>
-
-            <View style={styles.separator}>
-              <View style={styles.separatorLine} />
-              <Text style={styles.separatorText}>or login with</Text>
-              <View style={styles.separatorLine} />
             </View>
             <View style={styles.registerContainer}>
               <Text style={styles.registerText}>Don't have an account? </Text>
@@ -200,12 +185,10 @@ const LoginScreen = ({ onLogin }) => {
   );
 };
 
-const { width } = Dimensions.get("window");
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#ffffff",
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -220,20 +203,20 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   appName: {
-    color: "#fff",
+    color: "#333",
     fontSize: 28,
     fontWeight: "bold",
     marginTop: 8,
   },
   welcomeText: {
-    color: "#fff",
+    color: "#333",
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 10,
   },
   loginPrompt: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 30,
@@ -246,7 +229,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    color: "#fff",
+    color: "#333",
     fontSize: 16,
     marginBottom: 8,
     fontWeight: "500",
@@ -254,10 +237,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#333",
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: "#e0e0e0",
     height: 55,
   },
   inputError: {
@@ -268,7 +251,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: "#fff",
+    color: "#333",
     fontSize: 16,
     height: "100%",
   },
@@ -309,10 +292,10 @@ const styles = StyleSheet.create({
   separatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#444",
+    backgroundColor: "#e0e0e0",
   },
   separatorText: {
-    color: "#888",
+    color: "#666",
     marginHorizontal: 10,
     fontSize: 14,
   },
@@ -325,19 +308,19 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#333",
+    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: "#e0e0e0",
   },
   registerContainer: {
     flexDirection: "row",
     justifyContent: "center",
   },
   registerText: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 16,
   },
   registerLink: {
