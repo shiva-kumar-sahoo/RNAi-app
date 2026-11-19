@@ -15,7 +15,6 @@ const App = () => {
       >
         <Navigation />
       </View>
-      {/* <StatusBar style="auto" /> */}
     </>
   );
 };

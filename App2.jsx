@@ -11,7 +11,7 @@ import {
   TextInput,
 } from "react-native";
 
-import RNFS from "react-native-fs"; // File system module
+import RNFS from "react-native-fs";
 import { initLlama, releaseAllLlama } from "llama.rn";
 
 const MODEL_NAME = "Qwen2.5-0.5B-Instruct-GGUF";
@@ -33,7 +33,6 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [modelExists, setModelExists] = useState(false);
 
-  // Check if the model file exists on app start
   useEffect(() => {
     const checkModelExists = async () => {
       const exists = await RNFS.exists(MODEL_PATH);
@@ -59,7 +58,7 @@ function App() {
 
       await download.promise;
       Alert.alert("Success", `Model downloaded to: ${MODEL_PATH}`);
-      setModelExists(true); // Update state to reflect that the model exists
+      setModelExists(true);
       await loadModel(MODEL_PATH);
     } catch (error) {
       console.error("Download error:", error);
@@ -101,7 +100,6 @@ function App() {
       return;
     }
 
-    // Add the user's message to the conversation
     const newConversation = [
       ...conversation,
       { role: "user", content: userInput },
@@ -111,14 +109,12 @@ function App() {
     setIsGenerating(true);
 
     try {
-      // Pass the entire conversation history to the model
       const result = await context.completion({
         messages: newConversation,
         n_predict: 1000,
       });
 
       if (result && result.text) {
-        // Add the assistant's response to the conversation
         setConversation((prev) => [
           ...prev,
           { role: "assistant", content: result.text.trim() },
